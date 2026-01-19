@@ -1,0 +1,93 @@
+import React, { useEffect, useState } from "react";
+import { SafeAreaView, StyleSheet, View, Text, Button, Alert } from "react-native";
+import RunForm from "./src/components/RunForm";
+import RunList from "./src/components/RunList";
+import Summary from "./src/components/Summary";
+import { loadRuns, saveRuns } from "./src/utils/storage";
+
+export default function App() {
+  const [runs, setRuns] = useState([]);
+  const [editing, setEditing] = useState(null); // run being edited
+
+  useEffect(() => {
+    (async () => {
+      const stored = await loadRuns();
+      setRuns(stored || []);
+    })();
+  }, []);
+
+  useEffect(() => {
+    saveRuns(runs);
+  }, [runs]);
+
+  function addRun(run) {
+    setRuns((prev) => [run, ...prev]);
+  }
+
+  function updateRun(updated) {
+    setRuns((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+    setEditing(null);
+  }
+
+  function deleteRun(id) {
+    Alert.alert("Delete run", "Are you sure you want to delete this run?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => setRuns((prev) => prev.filter((r) => r.id !== id))
+      }
+    ]);
+  }
+
+  async function handleExport() {
+    const json = JSON.stringify(runs, null, 2);
+    // For now just show an alert with length and copy instructions
+    Alert.alert("Export JSON", `Runs exported (${runs.length} entries). Copy from logs or implement file share.`);
+    console.log("Export JSON:\n", json);
+  }
+
+  async function handleImport(jsonString) {
+    try {
+      const imported = JSON.parse(jsonString);
+      if (!Array.isArray(imported)) throw new Error("Invalid format");
+      setRuns(imported);
+    } catch (e) {
+      Alert.alert("Import failed", "Make sure you pasted valid JSON (an array of runs).");
+    }
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <Text style={styles.header}>Run Habit Tracker</Text>
+      <View style={styles.section}>
+        <Summary runs={runs} />
+      </View>
+      <View style={styles.section}>
+        <RunForm onAdd={addRun} onUpdate={updateRun} editing={editing} onCancel={() => setEditing(null)} />
+      </View>
+      <View style={styles.section}>
+        <RunList runs={runs} onDelete={deleteRun} onEdit={(r) => setEditing(r)} />
+      </View>
+      <View style={styles.footer}>
+        <Button title="Export JSON (console)" onPress={handleExport} />
+        <View style={{ height: 8 }} />
+        <Button
+          title="Import JSON (example)"
+          onPress={() =>
+            handleImport(
+              '[{"id":"example-1","date":"2026-01-01","distanceKm":5,"durationMin":30,"notes":"Example run"}]'
+            )
+          }
+        />
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 16, backgroundColor: "#fff" },
+  header: { fontSize: 24, fontWeight: "700", marginBottom: 8 },
+  section: { marginBottom: 12 },
+  footer: { marginTop: 8 }
+});
