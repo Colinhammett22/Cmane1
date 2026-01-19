@@ -1,0 +1,22 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const KEY = "run_habit_tracker_runs_v1";
+
+export async function loadRuns() {
+  try {
+    const raw = await AsyncStorage.getItem(KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn("Failed to load runs", e);
+    return [];
+  }
+}
+
+export async function saveRuns(runs) {
+  try {
+    await AsyncStorage.setItem(KEY, JSON.stringify(runs || []));
+  } catch (e) {
+    console.warn("Failed to save runs", e);
+  }
+}
