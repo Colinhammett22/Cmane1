@@ -1,0 +1,65 @@
+import React, { useEffect, useState } from "react";
+import { View, TextInput, Button, StyleSheet, Text } from "react-native";
+import { v4 as uuidv4 } from "uuid";
+
+export default function RunForm({ onAdd, editing, onUpdate, onCancel }) {
+  const initial = { date: new Date().toISOString().slice(0, 10), distanceKm: "", durationMin: "", notes: "" };
+  const [form, setForm] = useState(initial);
+
+  useEffect(() => {
+    if (editing) {
+      setForm({
+        date: editing.date,
+        distanceKm: String(editing.distanceKm),
+        durationMin: String(editing.durationMin),
+        notes: editing.notes || ""
+      });
+    } else {
+      setForm(initial);
+    }
+  }, [editing]);
+
+  function handleChange(key, value) {
+    setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  function submit() {
+    const distanceKm = parseFloat(form.distanceKm) || 0;
+    const durationMin = parseFloat(form.durationMin) || 0;
+    if (!form.date) {
+      alert("Please enter a date (YYYY-MM-DD).");
+      return;
+    }
+    const run = {
+      id: editing ? editing.id : uuidv4(),
+      date: form.date,
+      distanceKm,
+      durationMin,
+      notes: form.notes
+    };
+    if (editing && onUpdate) onUpdate(run);
+    else if (onAdd) onAdd(run);
+    setForm(initial);
+  }
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>{editing ? "Edit Run" : "Add Run"}</Text>
+      <TextInput style={styles.input} value={form.date} onChangeText={(t) => handleChange("date", t)} placeholder="YYYY-MM-DD" />
+      <TextInput style={styles.input} value={form.distanceKm} onChangeText={(t) => handleChange("distanceKm", t)} placeholder="Distance (km)" keyboardType="numeric" />
+      <TextInput style={styles.input} value={form.durationMin} onChangeText={(t) => handleChange("durationMin", t)} placeholder="Duration (min)" keyboardType="numeric" />
+      <TextInput style={styles.input} value={form.notes} onChangeText={(t) => handleChange("notes", t)} placeholder="Notes (optional)" />
+      <View style={styles.row}>
+        <Button title={editing ? "Save" : "Add"} onPress={submit} />
+        {editing ? <Button title="Cancel" onPress={onCancel} /> : null}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { padding: 8, borderWidth: 1, borderColor: "#eee", borderRadius: 8, backgroundColor: "#fafafa" },
+  title: { fontWeight: "600", marginBottom: 6 },
+  input: { borderWidth: 1, borderColor: "#ddd", padding: 8, borderRadius: 6, marginBottom: 6 },
+  row: { flexDirection: "row", justifyContent: "space-between" }
+});
